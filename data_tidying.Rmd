@@ -1,0 +1,39 @@
+---
+title: "Data Tidying"
+author: "Stephen Klobucar"
+date: "October 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=F, message=F}
+library(dplyr)
+library(tidyr)
+```
+
+Read in catch data from []https://knb.ecoinformatics.org/view/df35b.304.2
+
+```{r}
+catch_df <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.302.1", method = "libcurl"),
+                    stringsAsFactors = FALSE)
+head(catch_df)
+```
+
+`select` columns neeeded for analyses
+`gather` to move from wide to long
+`rename` a column to indicate units
+
+```{r}
+catch_clean <- catch_df %>% 
+  #select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum)
+  select(-All, -notesRegCode) %>% 
+  gather(key = 'species', value = 'catch', -Region, -Year) %>% 
+  rename(catch_thousands = catch)
+
+#head(catch_clean)
+tail(catch_clean)
+```
+

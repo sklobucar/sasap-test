@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, warning=F, message=F}
 library(dplyr)
 library(tidyr)
+library(DT)
 ```
 
 Read in catch data from []https://knb.ecoinformatics.org/view/df35b.304.2
@@ -80,4 +81,51 @@ catch_chinook <- catch_clean_mutated %>%
   arrange(-catch)
 
 head(catch_chinook)
+
+DT::datatable(catch_chinook)
 ```
+
+#Joins
+load regions data table
+```{r}
+region_defs <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1", method = "libcurl"),
+                        stringsAsFactors = FALSE)
+
+head(region_defs)
+```
+
+```{r}
+region_defs <- region_defs %>% 
+  select(code, mgmtArea)
+
+head(region_defs)
+```
+
+```{r}
+catch_joined <- left_join(catch_clean_mutated, region_defs, by = c("Region" = "code"))
+
+head(catch_joined)
+#inspect join
+nrow(catch_joined)
+nrow(catch_clean_mutated)
+#another way
+i <-  which(is.na(catch_joined$mgmtArea))
+nrow(i)
+```
+
+```{r}
+dates_df <- data.frame(date = c("5/24/1930",
+                                "5/25/1930",
+                                "5/26/1930",
+                                "5/27/1930",
+                                "5/28/1930"),
+                       stringsAsFactors = FALSE)
+
+dates_df %>% 
+  separate(date, c("month", "day", "year"), "/") %>% 
+  unite(col = date_iso, year, month, day, sep = '-')  ##but, month should be two digits
+
+dates_df
+
+```
+

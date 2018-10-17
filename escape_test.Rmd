@@ -1,0 +1,101 @@
+---
+title: "Escapement"
+author: "Stephen Klobucar"
+date: "October 17, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, warning=F, message=F}
+library(dplyr)
+library(tidyr)
+library(DT)
+```
+
+#Prepare Daily Escapement Data
+
+Daily data sources from [Alaska Department of Fish and Game. 2017. Daily salmon escapement counts from the OceanAK database, Alaska, 1921-2017. Knowledge Network for Biocomplexity. doi:10.5063/F1TX3CKH](https://doi.org/10.5063/F1TX3CKH)
+
++filter for Bristol Bay Sockeye
++summarize by year, calculating total count
+
+```{r}
+daily <- read.csv(url('https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e', method = "libcurl"),
+                    stringsAsFactors = FALSE)
+head(daily)
+```
+
+```{r}
+daily_Bristol <- daily %>% 
+  select(sampleDate, SASAP.Region, Location, Species, DailyCount) %>% 
+  filter(SASAP.Region == "Bristol Bay", Species == "Sockeye") %>% 
+  separate(sampleDate, c("year", "month", "day"), '-') %>% 
+  select(-month, -day)
+
+head(daily_Bristol)
+```
+
+```{r}
+summ_Bristol <-  daily_Bristol %>% 
+  group_by(year, Location) %>% 
+  summarise(sum = sum(DailyCount))
+  
+head(summ_Bristol)  
+tail(summ_Bristol)
+```
+
+
+#Prepare Escapement Goals Data
+
+```{r}
+escape <- read.csv(url('https://knb.ecoinformatics.org/knb/d1/mn/v2/object/knb.92014.1', method = "libcurl"),
+                    stringsAsFactors = FALSE)
+head(escape)
+```
+
+```{r}
+test <- as.numeric(escape$Lower)
+i <- which(is.na(test)==T)
+print(i)
+
+escape_clean <- escape[-i,]
+
+```
+
+```{r}
+escape_Bristol <- escape_clean %>% 
+  filter(Species == 'Sockeye', Region == 'Bristol Bay', Type != 'OEG') %>% 
+  select(System, Lower, Upper)
+
+head(escape_Bristol)
+tail(escape_Bristol)
+```
+
+```{r}
+escape_Bristol$lower <- as.numeric(escape_Bristol$Lower)
+
+escape_Bristol_clean <- select(escape_Bristol, -Lower)
+
+head(escape_Bristol_clean)
+```
+
+```{r}
+escape_join <- left_join(summ_Bristol, escape_Bristol_clean, by = c('Location' = 'System'))
+
+escape_join
+```
+
+
+#Evaluate Escapement Goals
+```{r}
+escape_eval <- escape_join %>% 
+  #mutate(escape_met = ifelse(sum < lower | sum > Upper, 'no', 'yes'))
+     mutate(escape_met = ifelse(sum > lower & sum < Upper, 'yes', 'no'))
+                                                     
+escape_eval  
+```
+

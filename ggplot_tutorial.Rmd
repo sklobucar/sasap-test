@@ -1,0 +1,99 @@
+---
+title: "ggplot"
+author: "Stephen Klobucar"
+date: "October 17, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Load example data
+
+Load data from the KNB for generating plots
+
+```{r}
+suppressPackageStartupMessages({
+  library(ggplot2)
+  library(tidyr)
+  library(dplyr)
+  library(DT)
+})
+
+# https://knb.ecoinformatics.org/#view/urn:uuid:e05865d7-678d-4513-9061-2ab7d979f8e7
+# Search 'permit value'
+permits <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Aa3c58bd6-481e-4c64-aa93-795df10a4664", method = "libcurl"),
+                    stringsAsFactors = FALSE)
+
+datatable(permits)
+```
+
+#Start exploring ggplot
+
+```{r}
+ggplot(permits, aes(x = Value, y = StdDev, color = Region, shape = Gear)) +
+  geom_point()
+```
+
+```{r}
+ggplot(permits, aes(x = Value, y = StdDev, shape = Gear)) +
+  geom_point(color = 'blue')
+```
+#Make a histogram
+
+```{r}
+ggplot(permits, aes(Value)) + 
+  geom_histogram()
+```
+
+#Boxplot
+
+```{r}
+ggplot(permits, aes(Gear, Value)) + 
+  geom_boxplot()
+```
+#Scatter
+
+```{r}
+permits_se_seine <- permits %>% 
+  filter(Gear == "Purse Seine", 
+         Region == "Southeast")
+
+ggplot(permits_se_seine, aes(Year, Value)) + 
+  geom_point() +
+  geom_line()
+```
+
+#Working with themes 
+    Skipping through sections
+    
+```{r}
+my_theme <- theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid.major = element_line(size = 1, linetype = 4),
+        panel.grid.minor = element_blank())
+
+ggplot(permits, aes(Value, StdDev, color = Gear)) +
+  geom_point() +
+  my_theme
+```
+
+##multipanel plots
+
+```{r}
+suppressPackageStartupMessages({
+  library(gridExtra)
+})
+
+p1 <- ggplot(permits, aes(Year, Value)) + ##different data subset in online tutorial
+  geom_point() + 
+  geom_line()
+
+p2 <- ggplot(permits %>% filter(Gear == "Purse Seine"), aes(Region, Value)) +
+  geom_boxplot() +
+  scale_y_continuous(labels = function(x) { format(x, scientific = FALSE) })
+
+grid.arrange(p1, p2)
+```
+

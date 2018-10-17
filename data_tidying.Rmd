@@ -22,9 +22,9 @@ catch_df <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df3
 head(catch_df)
 ```
 
-`select` columns neeeded for analyses
-`gather` to move from wide to long
-`rename` a column to indicate units
+`select` columns needed for analyses  
+`gather` to move from wide to long  
+`rename` a column to indicate units  
 
 ```{r}
 catch_clean <- catch_df %>% 
@@ -37,3 +37,47 @@ catch_clean <- catch_df %>%
 tail(catch_clean)
 ```
 
+
+
+```{r}
+test <- as.numeric(catch_clean$catch_thousands)
+
+i <- which(is.na(test) == T)
+print(i)
+
+catch_clean[i,]
+```
+fix typo in original dataset  
+coerce catch to numeric, convert to number of fish  
+`mutate` to create a new catch column  
+
+```{r}
+catch_clean_mutated <- catch_clean %>% 
+  mutate(catch_thousands = ifelse(catch_thousands == 'I', 1, catch_thousands)) %>% 
+  mutate(catch_thousands = as.numeric(catch_thousands)) %>% 
+  mutate(catch = catch_thousands * 1000) %>% 
+  select(-catch_thousands)
+
+#head(catch_clean_mutated)
+tail(catch_clean_mutated)
+```
+
+
+split using `group_by`  
+apply and combine using `summarize`  
+
+```{r}
+catch_summ <- catch_clean_mutated %>% 
+  group_by(Region, species) %>% 
+  summarize(mean_catch = mean(catch), max(catch),
+            n_obs = n())
+
+head(catch_summ)
+```
+```{r}
+catch_chinook <- catch_clean_mutated %>% 
+  filter(species == 'Chinook') %>% 
+  arrange(-catch)
+
+head(catch_chinook)
+```

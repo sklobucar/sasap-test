@@ -142,7 +142,9 @@ head(catch_df)</code></pre>
 ## 4    SSE 1889       0     182   11   92    0 285             
 ## 5    SSE 1890       0     251   42    0    0 292             
 ## 6    SSE 1891       0     274   24    0    0 298</code></pre>
-<p><code>select</code> columns neeeded for analyses <code>gather</code> to move from wide to long <code>rename</code> a column to indicate units</p>
+<p><code>select</code> columns needed for analyses<br />
+<code>gather</code> to move from wide to long<br />
+<code>rename</code> a column to indicate units</p>
 <pre class="r"><code>catch_clean &lt;- catch_df %&gt;% 
   #select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum)
   select(-All, -notesRegCode) %&gt;% 
@@ -158,6 +160,62 @@ tail(catch_clean)</code></pre>
 ## 8538    NOP 1995    Chum              99
 ## 8539    NOP 1996    Chum              68
 ## 8540    NOP 1997    Chum              97</code></pre>
+<pre class="r"><code>test &lt;- as.numeric(catch_clean$catch_thousands)</code></pre>
+<pre><code>## Warning: NAs introduced by coercion</code></pre>
+<pre class="r"><code>i &lt;- which(is.na(test) == T)
+print(i)</code></pre>
+<pre><code>## [1] 401</code></pre>
+<pre class="r"><code>catch_clean[i,]</code></pre>
+<pre><code>##     Region Year species catch_thousands
+## 401    GSE 1955 Chinook               I</code></pre>
+<p>fix typo in original dataset<br />
+coerce catch to numeric, convert to number of fish<br />
+<code>mutate</code> to create a new catch column</p>
+<pre class="r"><code>catch_clean_mutated &lt;- catch_clean %&gt;% 
+  mutate(catch_thousands = ifelse(catch_thousands == 'I', 1, catch_thousands)) %&gt;% 
+  mutate(catch_thousands = as.numeric(catch_thousands)) %&gt;% 
+  mutate(catch = catch_thousands * 1000) %&gt;% 
+  select(-catch_thousands)
+
+#head(catch_clean_mutated)
+tail(catch_clean_mutated)</code></pre>
+<pre><code>##      Region Year species  catch
+## 8535    NOP 1992    Chum 342000
+## 8536    NOP 1993    Chum 135000
+## 8537    NOP 1994    Chum  84000
+## 8538    NOP 1995    Chum  99000
+## 8539    NOP 1996    Chum  68000
+## 8540    NOP 1997    Chum  97000</code></pre>
+<p>split using <code>group_by</code><br />
+apply and combine using <code>summarize</code></p>
+<pre class="r"><code>catch_summ &lt;- catch_clean_mutated %&gt;% 
+  group_by(Region, species) %&gt;% 
+  summarize(mean_catch = mean(catch), max(catch),
+            n_obs = n())
+
+head(catch_summ)</code></pre>
+<pre><code>## # A tibble: 6 x 5
+## # Groups:   Region [2]
+##   Region species mean_catch `max(catch)` n_obs
+##   &lt;chr&gt;  &lt;chr&gt;        &lt;dbl&gt;        &lt;dbl&gt; &lt;int&gt;
+## 1 ALU    Chinook       23.0         2000    87
+## 2 ALU    Chum        2908.         95000    87
+## 3 ALU    Coho         195.          4000    87
+## 4 ALU    Pink      191954.       2597000    87
+## 5 ALU    Sockeye     6839.         76000    87
+## 6 BER    Chinook       19.6         1000   102</code></pre>
+<pre class="r"><code>catch_chinook &lt;- catch_clean_mutated %&gt;% 
+  filter(species == 'Chinook') %&gt;% 
+  arrange(-catch)
+
+head(catch_chinook)</code></pre>
+<pre><code>##   Region Year species  catch
+## 1    SSE 1937 Chinook 609000
+## 2    NSE 1935 Chinook 597000
+## 3    NSE 1941 Chinook 515000
+## 4    NSE 1939 Chinook 493000
+## 5    SSE 1938 Chinook 485000
+## 6    NSE 1924 Chinook 479000</code></pre>
 
 
 
